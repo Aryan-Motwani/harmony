@@ -95,6 +95,7 @@ export default function SignatureCollection() {
   const handleOpenSignature = (index) => {
     setCurrentPersonIndex(index);
     setIsModalOpen(true);
+    document.body.style.overflow = 'hidden'; // Prevent body scrolling when modal is open
   };
 
   const handleSaveSignature = () => {
@@ -105,6 +106,7 @@ export default function SignatureCollection() {
     setSignatures(newSignatures);
     clearCanvas();
     setIsModalOpen(false);
+    document.body.style.overflow = ''; // Restore body scrolling
   };
 
   const clearCanvas = () => {
@@ -189,7 +191,10 @@ export default function SignatureCollection() {
       {/* Signature Modal */}
       <Modal
         isOpen={isModalOpen}
-        onRequestClose={() => setIsModalOpen(false)}
+        onRequestClose={() => {
+          setIsModalOpen(false);
+          document.body.style.overflow = ''; // Restore body scrolling when modal is closed
+        }}
         style={{
           content: {
             top: '50%',
@@ -199,6 +204,7 @@ export default function SignatureCollection() {
             transform: 'translate(-50%, -50%)',
             width: '500px',
             height: '300px',
+            overflow: 'hidden', // Prevent overflow within the modal
           },
         }}
       >
