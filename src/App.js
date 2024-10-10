@@ -23,39 +23,67 @@ export default function SignatureCollection() {
   const lastX = useRef(Array(numPeople).fill(0));
   const lastY = useRef(Array(numPeople).fill(0));
 
-  const handleMouseDown = (index, e) => {
+  const startDrawing = (index, x, y) => {
     const canvas = canvasRefs.current[index];
     const ctx = canvas.getContext('2d');
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'black';
     ctx.beginPath();
+    ctx.moveTo(x, y);
     isDrawing.current[index] = true;
-    const rect = canvas.getBoundingClientRect();
-    lastX.current[index] = e.clientX - rect.left;
-    lastY.current[index] = e.clientY - rect.top;
-
-    canvas.addEventListener('mousemove', (e) => handleMouseMove(e, index));
   };
 
-  const handleMouseMove = (e, index) => {
+  const draw = (index, x, y) => {
     if (!isDrawing.current[index]) return;
     const canvas = canvasRefs.current[index];
     const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    ctx.moveTo(lastX.current[index], lastY.current[index]);
     ctx.lineTo(x, y);
     ctx.stroke();
-    lastX.current[index] = x;
-    lastY.current[index] = y;
   };
 
-  const handleMouseUp = (index) => {
+  const handleMouseDown = (index, e) => {
+    const rect = canvasRefs.current[index].getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    startDrawing(index, x, y);
+    
+    const mouseMoveHandler = (e) => {
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      draw(index, x, y);
+    };
+    
+    const mouseUpHandler = () => {
+      isDrawing.current[index] = false;
+      window.removeEventListener('mousemove', mouseMoveHandler);
+      window.removeEventListener('mouseup', mouseUpHandler);
+    };
+    
+    window.addEventListener('mousemove', mouseMoveHandler);
+    window.addEventListener('mouseup', mouseUpHandler);
+  };
+
+  const handleTouchStart = (index, e) => {
+    e.preventDefault(); // Prevent scrolling when drawing
+    const rect = canvasRefs.current[index].getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    startDrawing(index, x, y);
+  };
+
+  const handleTouchMove = (index, e) => {
+    e.preventDefault(); // Prevent scrolling when drawing
+    const rect = canvasRefs.current[index].getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    draw(index, x, y);
+  };
+
+  const handleTouchEnd = (index) => {
     isDrawing.current[index] = false;
-    const canvas = canvasRefs.current[index];
-    canvas.removeEventListener('mousemove', (e) => handleMouseMove(e, index));
   };
 
   const handleSaveSignature = (index) => {
@@ -113,8 +141,10 @@ export default function SignatureCollection() {
 
           <canvas
             ref={(el) => (canvasRefs.current[index] = el)}
-            onMouseDown={(e) => handleMouseDown(index, e)} // Pass event here
-            onMouseUp={() => handleMouseUp(index)}
+            onMouseDown={(e) => handleMouseDown(index, e)}
+            onTouchStart={(e) => handleTouchStart(index, e)}
+            onTouchMove={(e) => handleTouchMove(index, e)}
+            onTouchEnd={() => handleTouchEnd(index)}
             width="500"
             height="200"
             style={{
