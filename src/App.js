@@ -1,9 +1,15 @@
 import React, { useState, useRef } from 'react';
+import Modal from 'react-modal';
+
+// Set app element for accessibility
+Modal.setAppElement('#root'); // Adjust based on your app's root element
 
 export default function SignatureCollection() {
   const [numPeople, setNumPeople] = useState(1);
-  const [signatures, setSignatures] = useState([]);
   const [people, setPeople] = useState([{ name: '', signature: null }]);
+  const [signatures, setSignatures] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPersonIndex, setCurrentPersonIndex] = useState(null);
   const canvasRefs = useRef([]);
 
   const handleNumPeopleChange = (e) => {
@@ -19,43 +25,43 @@ export default function SignatureCollection() {
     setPeople(newPeople);
   };
 
-  const isDrawing = useRef(Array(numPeople).fill(false));
-  const lastX = useRef(Array(numPeople).fill(0));
-  const lastY = useRef(Array(numPeople).fill(0));
+  const isDrawing = useRef(false);
+  const lastX = useRef(0);
+  const lastY = useRef(0);
 
-  const startDrawing = (index, x, y) => {
-    const canvas = canvasRefs.current[index];
+  const startDrawing = (x, y) => {
+    const canvas = canvasRefs.current[currentPersonIndex];
     const ctx = canvas.getContext('2d');
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.strokeStyle = 'black';
     ctx.beginPath();
     ctx.moveTo(x, y);
-    isDrawing.current[index] = true;
+    isDrawing.current = true;
   };
 
-  const draw = (index, x, y) => {
-    if (!isDrawing.current[index]) return;
-    const canvas = canvasRefs.current[index];
+  const draw = (x, y) => {
+    if (!isDrawing.current) return;
+    const canvas = canvasRefs.current[currentPersonIndex];
     const ctx = canvas.getContext('2d');
     ctx.lineTo(x, y);
     ctx.stroke();
   };
 
-  const handleMouseDown = (index, e) => {
-    const rect = canvasRefs.current[index].getBoundingClientRect();
+  const handleMouseDown = (e) => {
+    const rect = canvasRefs.current[currentPersonIndex].getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    startDrawing(index, x, y);
+    startDrawing(x, y);
     
     const mouseMoveHandler = (e) => {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      draw(index, x, y);
+      draw(x, y);
     };
     
     const mouseUpHandler = () => {
-      isDrawing.current[index] = false;
+      isDrawing.current = false;
       window.removeEventListener('mousemove', mouseMoveHandler);
       window.removeEventListener('mouseup', mouseUpHandler);
     };
@@ -64,39 +70,45 @@ export default function SignatureCollection() {
     window.addEventListener('mouseup', mouseUpHandler);
   };
 
-  const handleTouchStart = (index, e) => {
+  const handleTouchStart = (e) => {
     e.preventDefault(); // Prevent scrolling when drawing
-    const rect = canvasRefs.current[index].getBoundingClientRect();
+    const rect = canvasRefs.current[currentPersonIndex].getBoundingClientRect();
     const touch = e.touches[0];
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
-    startDrawing(index, x, y);
+    startDrawing(x, y);
   };
 
-  const handleTouchMove = (index, e) => {
+  const handleTouchMove = (e) => {
     e.preventDefault(); // Prevent scrolling when drawing
-    const rect = canvasRefs.current[index].getBoundingClientRect();
+    const rect = canvasRefs.current[currentPersonIndex].getBoundingClientRect();
     const touch = e.touches[0];
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
-    draw(index, x, y);
+    draw(x, y);
   };
 
-  const handleTouchEnd = (index) => {
-    isDrawing.current[index] = false;
+  const handleTouchEnd = () => {
+    isDrawing.current = false;
   };
 
-  const handleSaveSignature = (index) => {
-    const canvas = canvasRefs.current[index];
+  const handleOpenSignature = (index) => {
+    setCurrentPersonIndex(index);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveSignature = () => {
+    const canvas = canvasRefs.current[currentPersonIndex];
     const dataURL = canvas.toDataURL();
     const newSignatures = [...signatures];
-    newSignatures[index] = { name: people[index].name, signature: dataURL };
+    newSignatures[currentPersonIndex] = { name: people[currentPersonIndex].name, signature: dataURL };
     setSignatures(newSignatures);
-    clearCanvas(index);
+    clearCanvas();
+    setIsModalOpen(false);
   };
 
-  const clearCanvas = (index) => {
-    const canvas = canvasRefs.current[index];
+  const clearCanvas = () => {
+    const canvas = canvasRefs.current[currentPersonIndex];
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
@@ -138,25 +150,11 @@ export default function SignatureCollection() {
             }}
             required
           />
-
-          <canvas
-            ref={(el) => (canvasRefs.current[index] = el)}
-            onMouseDown={(e) => handleMouseDown(index, e)}
-            onTouchStart={(e) => handleTouchStart(index, e)}
-            onTouchMove={(e) => handleTouchMove(index, e)}
-            onTouchEnd={() => handleTouchEnd(index)}
-            width="500"
-            height="200"
-            style={{
-              border: '1px solid #ccc',
-              marginBottom: '10px',
-              cursor: 'crosshair',
-            }}
-          />
-
+          
           <button
-            onClick={() => handleSaveSignature(index)}
+            onClick={() => handleOpenSignature(index)}
             style={{
+              marginTop: '10px',
               width: '100%',
               padding: '12px',
               backgroundColor: 'black',
@@ -167,7 +165,7 @@ export default function SignatureCollection() {
               fontWeight: 'bold',
             }}
           >
-            Save Signature
+            Open Signature
           </button>
         </div>
       ))}
@@ -187,6 +185,56 @@ export default function SignatureCollection() {
           <p>No signatures collected yet.</p>
         )}
       </div>
+
+      {/* Signature Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        style={{
+          content: {
+            top: '50%',
+            left: '50%',
+            right: 'auto',
+            bottom: 'auto',
+            transform: 'translate(-50%, -50%)',
+            width: '500px',
+            height: '300px',
+          },
+        }}
+      >
+        <h2 style={{ textAlign: 'center' }}>Sign Here</h2>
+        <canvas
+          ref={(el) => (canvasRefs.current[currentPersonIndex] = el)}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          width="400"
+          height="200"
+          style={{
+            border: '1px solid #ccc',
+            cursor: 'crosshair',
+            margin: '10px auto',
+          }}
+        />
+        <div style={{ textAlign: 'center', marginTop: '10px' }}>
+          <button
+            onClick={handleSaveSignature}
+            style={{
+              width: '100%',
+              padding: '12px',
+              backgroundColor: 'black',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Save Signature
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
