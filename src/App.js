@@ -202,43 +202,48 @@ export default function SignatureCollection() {
             right: 'auto',
             bottom: 'auto',
             transform: 'translate(-50%, -50%)',
-            width: '500px',
+            width: '90%',  // Adjusted width for responsiveness
+            maxWidth: '500px',  // Set a max width
             height: '300px',
             overflow: 'hidden', // Prevent overflow within the modal
+            padding: '0', // Remove default padding
           },
         }}
       >
-        <h2 style={{ textAlign: 'center' }}>Sign Here</h2>
-        <canvas
-          ref={(el) => (canvasRefs.current[currentPersonIndex] = el)}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          width="400"
-          height="200"
-          style={{
-            border: '1px solid #ccc',
-            cursor: 'crosshair',
-            margin: '10px auto',
-          }}
-        />
-        <div style={{ textAlign: 'center', marginTop: '10px' }}>
-          <button
-            onClick={handleSaveSignature}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <h2 style={{ textAlign: 'center', margin: '10px 0' }}>Sign Here</h2>
+          <canvas
+            ref={(el) => (canvasRefs.current[currentPersonIndex] = el)}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            width="400"
+            height="200"
             style={{
-              width: '100%',
-              padding: '12px',
-              backgroundColor: 'black',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
+              border: '1px solid #ccc',
+              cursor: 'crosshair',
+              margin: '0 auto', // Center the canvas
+              flex: '1', // Make the canvas fill available space
             }}
-          >
-            Save Signature
-          </button>
+          />
+          <div style={{ textAlign: 'center', margin: '10px 0' }}>
+            <button
+              onClick={handleSaveSignature}
+              style={{
+                width: '80%', // Fixed width for better visibility
+                padding: '12px',
+                backgroundColor: 'black',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+            >
+              Save Signature
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
