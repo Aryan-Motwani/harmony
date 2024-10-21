@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import client from './sanityClient';
+import Navbar from './Navbar';
 
 export default function Form() {
   const [customerName, setCustomerName] = useState('');
@@ -57,16 +58,33 @@ export default function Form() {
     const packagePrice = durationPricing[selectedDuration];
     const socksTotal = needsSocks ? numPeople * 30 : 0;
     const total = packagePrice * numPeople + socksTotal;
-
+  
     const billDetails = `
-      ${numPeople} people - ${selectedDuration} (${packagePrice} Rs each)
-      Socks: ${socksTotal} Rs
-      Billed by: ${billedBy}
-      Payment Method: ${paymentMethod}
+      ---------------------------
+              PAID
+           Health & Harmony
+        Cannaught place, Delhi
+         Phone: +91 7888106698
+      ---------------------------
+      Name: ${customerName} (M: ${phone})
+      Date: ${new Date().toLocaleString()}
+      Duration: ${selectedDuration}
+      Billed By: ${billedBy}
+      ---------------------------
+      No.    Item          Qty   Price
+      1      Entry         ${numPeople}   ${packagePrice}
+      ${needsSocks ? `Socks: ${numPeople} pairs - ${socksTotal} Rs` : ''}
+      ---------------------------
       Total: ${total} Rs
+      Payment Method: ${paymentMethod}
+      ${paymentMethod === 'mix' ? 
+        mixPayment.map((payment, index) => `Payment ${index + 1}: ${payment.method} - ${payment.amount} Rs`).join('\n') 
+        : ''}
+      ---------------------------
     `;
     setBill(billDetails);
   };
+  
 
   const storeData = async () => {
     const totalAmount = durationPricing[selectedDuration] * numPeople + (needsSocks ? numPeople * 30 : 0);
@@ -106,6 +124,8 @@ export default function Form() {
   };
 
   return (
+    <div>
+      <Navbar/>
     <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <header style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h1>Health and Harmony</h1>
@@ -273,6 +293,7 @@ export default function Form() {
           <pre>{bill}</pre>
         </div>
       )}
+    </div>
     </div>
   );
 }
