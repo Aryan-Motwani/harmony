@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import client from './sanityClient';
 import Navbar from './Navbar';
+import jsPDF from 'jspdf';
 
 export default function Form() {
   const [customerName, setCustomerName] = useState('');
@@ -58,10 +59,10 @@ export default function Form() {
     const packagePrice = durationPricing[selectedDuration];
     const socksTotal = needsSocks ? numPeople * 30 : 0;
     const total = packagePrice * numPeople + socksTotal;
-  
+
     const billDetails = `
       ---------------------------
-              PAID
+          PAID
            Health & Harmony
         Cannaught place, Delhi
          Phone: +91 7888106698
@@ -84,7 +85,6 @@ export default function Form() {
     `;
     setBill(billDetails);
   };
-  
 
   const storeData = async () => {
     const totalAmount = durationPricing[selectedDuration] * numPeople + (needsSocks ? numPeople * 30 : 0);
@@ -123,177 +123,184 @@ export default function Form() {
     }
   };
 
+  const printBill = () => {
+    const doc = new jsPDF();
+    doc.text(bill, 10, 10);
+    doc.save('bill.pdf');
+  };
+
   return (
     <div>
       <Navbar/>
-    <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <header style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1>Health and Harmony</h1>
-        <p>Trampoline Park Customer Information</p>
-      </header>
+      <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <header style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h1>Health and Harmony</h1>
+          <p>Trampoline Park Customer Information</p>
+        </header>
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '20px' }}>
-        <div>
-          <label>Customer Name</label>
-          <input
-            type="text"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div>
-          <label>Phone Number</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div>
-          <label>Number of People</label>
-          <input
-            type="number"
-            min="1"
-            value={numPeople}
-            onChange={handleNumPeopleChange}
-            style={inputStyle}
-          />
-        </div>
-
-        {people.map((person, index) => (
-          <div key={index} style={{ marginBottom: '10px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '20px' }}>
+          <div>
+            <label>Customer Name</label>
             <input
               type="text"
-              value={person.name}
-              onChange={(e) => handlePersonChange(index, e.target.value)}
-              placeholder={`Person ${index + 1} Name`}
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
               style={inputStyle}
             />
           </div>
-        ))}
 
-        <div>
-          <label>Duration</label>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-            {['30 min', '60 min', '90 min'].map((duration) => (
-              <button
-                key={duration}
-                type="button"
-                onClick={() => setSelectedDuration(duration)}
-                style={{
-                  flex: '1',
-                  padding: '12px',
-                  borderRadius: '4px',
-                  border: `2px solid ${selectedDuration === duration ? 'black' : '#ccc'}`,
-                  backgroundColor: selectedDuration === duration ? 'black' : 'white',
-                  color: selectedDuration === duration ? 'white' : 'black',
-                  cursor: 'pointer',
-                }}
-              >
-                {duration}
-              </button>
-            ))}
+          <div>
+            <label>Phone Number</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={inputStyle}
+            />
           </div>
-        </div>
 
-        <div>
-          <label>Billed By</label>
-          <select
-            value={billedBy}
-            onChange={(e) => setBilledBy(e.target.value)}
-            style={inputStyle}
-          >
-            <option value="Gulshan">Gulshan</option>
-            <option value="Aryan">Aryan</option>
-            <option value="Jayesh">Jayesh</option>
-          </select>
-        </div>
+          <div>
+            <label>Number of People</label>
+            <input
+              type="number"
+              min="1"
+              value={numPeople}
+              onChange={handleNumPeopleChange}
+              style={inputStyle}
+            />
+          </div>
 
-        <div>
-          <label>Payment Method</label>
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            style={inputStyle}
-          >
-            <option value="cash">Cash</option>
-            <option value="upi">UPI</option>
-            <option value="credit card">Credit Card</option>
-            <option value="mix">Mix</option>
-          </select>
-        </div>
+          {people.map((person, index) => (
+            <div key={index} style={{ marginBottom: '10px' }}>
+              <input
+                type="text"
+                value={person.name}
+                onChange={(e) => handlePersonChange(index, e.target.value)}
+                placeholder={`Person ${index + 1} Name`}
+                style={inputStyle}
+              />
+            </div>
+          ))}
 
-        {paymentMethod === 'mix' && (
-          <>
-            {mixPayment.map((payment, index) => (
-              <div key={index} style={{ display: 'flex', gap: '10px' }}>
-                <select
-                  value={payment.method}
-                  onChange={(e) => handleMixPaymentChange(index, 'method', e.target.value)}
-                  style={{ flex: '1', padding: '8px' }}
+          <div>
+            <label>Duration</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+              {['30 min', '60 min', '90 min'].map((duration) => (
+                <button
+                  key={duration}
+                  type="button"
+                  onClick={() => setSelectedDuration(duration)}
+                  style={{
+                    flex: '1',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: `2px solid ${selectedDuration === duration ? 'black' : '#ccc'}`,
+                    backgroundColor: selectedDuration === duration ? 'black' : 'white',
+                    color: selectedDuration === duration ? 'white' : 'black',
+                    cursor: 'pointer',
+                  }}
                 >
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="credit card">Credit Card</option>
-                </select>
-                <input
-                  type="number"
-                  placeholder="Amount"
-                  value={payment.amount}
-                  onChange={(e) => handleMixPaymentChange(index, 'amount', e.target.value)}
-                  style={{ flex: '1', padding: '8px' }}
-                />
-              </div>
-            ))}
-          </>
-        )}
-
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <input
-            type="checkbox"
-            checked={needsSocks}
-            onChange={(e) => setNeedsSocks(e.target.checked)}
-            style={{ marginRight: '8px' }}
-          />
-          <label>I need socks</label>
-        </div>
-
-        {needsSocks && (
-          <div style={{ display: 'grid', gap: '10px' }}>
-            <label>Sock Sizes</label>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              {['S', 'M', 'L'].map((size) => (
-                <div key={size} style={{ flex: '1' }}>
-                  <label>{size}</label>
-                  <input
-                    type="number"
-                    value={socksSizes[size]}
-                    onChange={(e) => handleSocksChange(size, e.target.value)}
-                    min="0"
-                    style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                  />
-                </div>
+                  {duration}
+                </button>
               ))}
             </div>
           </div>
+
+          <div>
+            <label>Billed By</label>
+            <select
+              value={billedBy}
+              onChange={(e) => setBilledBy(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="Gulshan">Gulshan</option>
+              <option value="Aryan">Aryan</option>
+              <option value="Jayesh">Jayesh</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Payment Method</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              style={inputStyle}
+            >
+              <option value="cash">Cash</option>
+              <option value="upi">UPI</option>
+              <option value="credit card">Credit Card</option>
+              <option value="mix">Mix</option>
+            </select>
+          </div>
+
+          {paymentMethod === 'mix' && (
+            <>
+              {mixPayment.map((payment, index) => (
+                <div key={index} style={{ display: 'flex', gap: '10px' }}>
+                  <select
+                    value={payment.method}
+                    onChange={(e) => handleMixPaymentChange(index, 'method', e.target.value)}
+                    style={{ flex: '1', padding: '8px' }}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="credit card">Credit Card</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={payment.amount}
+                    onChange={(e) => handleMixPaymentChange(index, 'amount', e.target.value)}
+                    style={{ flex: '1', padding: '8px' }}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+            <input
+              type="checkbox"
+              checked={needsSocks}
+              onChange={(e) => setNeedsSocks(e.target.checked)}
+              style={{ marginRight: '8px' }}
+            />
+            <label>I need socks</label>
+          </div>
+
+          {needsSocks && (
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <label>Sock Sizes</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                {['S', 'M', 'L'].map((size) => (
+                  <div key={size} style={{ flex: '1' }}>
+                    <label>{size}</label>
+                    <input
+                      type="number"
+                      value={socksSizes[size]}
+                      onChange={(e) => handleSocksChange(size, e.target.value)}
+                      min="0"
+                      style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button type="submit" style={{ ...buttonStyle, marginBottom: '10px' }}>Submit</button>
+          <button type="button" onClick={storeData} style={buttonStyle}>Save to Database</button>
+          <button type="button" onClick={clearAllTickets} style={buttonStyle}>Clear All Tickets</button>
+        </form>
+
+        {bill && (
+          <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}>
+            <h2 style={{ textAlign: 'center' }}>Bill Details</h2>
+            <pre style={{ textAlign: 'center' }}>{bill}</pre>
+            <button onClick={printBill} style={buttonStyle}>Print Bill</button>
+          </div>
         )}
-
-        <button type="submit" style={{ ...buttonStyle, marginBottom: '10px' }}>Submit</button>
-        <button type="button" onClick={storeData} style={buttonStyle}>Save to Database</button>
-        <button type="button" onClick={clearAllTickets} style={buttonStyle}>Clear All Tickets</button>
-      </form>
-
-      {bill && (
-        <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}>
-          <h2>Bill Details</h2>
-          <pre>{bill}</pre>
-        </div>
-      )}
-    </div>
+      </div>
     </div>
   );
 }
@@ -311,5 +318,6 @@ const buttonStyle = {
   backgroundColor: 'black',
   color: 'white',
   cursor: 'pointer',
+  textAlign:'center',
   marginBottom: '10px',
 };

@@ -12,6 +12,7 @@ export default function SignatureCollection() {
   const [people, setPeople] = useState([]); // Store people from the ticket
   const [signatures, setSignatures] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [currentPersonIndex, setCurrentPersonIndex] = useState(null);
   const canvasRefs = useRef([]);
   const isDrawing = useRef(false);
@@ -53,13 +54,17 @@ export default function SignatureCollection() {
     // Clean up the listener on unmount
     return () => subscription.unsubscribe();
   }, [id]);
-  
 
   // Open signature modal
   const handleOpenSignature = (index) => {
     setCurrentPersonIndex(index);
     setIsModalOpen(true);
     document.body.style.overflow = 'hidden'; // Prevent body scrolling when modal is open
+  };
+
+  // Accept terms
+  const handleAcceptTerms = () => {
+    setIsTermsAccepted(true);
   };
 
   // Save signature and upload to the server
@@ -76,7 +81,8 @@ export default function SignatureCollection() {
     setSignatures(newSignatures);
     setIsModalOpen(false);  
     document.body.style.overflow = '';  
-    
+    setIsTermsAccepted(false); // Reset terms acceptance for next person
+
     // Clear the canvas after saving
     clearCanvas();
 
@@ -198,18 +204,59 @@ export default function SignatureCollection() {
 
   return (
     <div>
-    <Navbar/>
-    <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center' }}>Signature Collection</h1>
+      <Navbar/>
+      <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <h1 style={{ textAlign: 'center' }}>Signature Collection</h1>
 
-      {people.map((person, index) => (
-        <div key={index} style={{ marginBottom: '20px' }}>
-          <label>{person.name}</label>
+        {people.map((person, index) => (
+          <div key={index} style={{ marginBottom: '20px' }}>
+            <label>{person.name}</label>
+            <button
+              onClick={() => handleOpenSignature(index)}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                padding: '12px',
+                backgroundColor: 'black',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+              }}
+            >
+              Open Signature
+            </button>
+          </div>
+        ))}
+
+        {/* Collected Signatures Section */}
+        <div style={{ marginTop: '20px' }}>
+          <h2 style={{ fontSize: '20px' }}>Collected Signatures</h2>
+          {signatures.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {signatures.map((sig, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
+                  {sig.signature ? (
+                    <img src={sig.signature} alt={`Signature of ${sig.name}`} style={{ width: '200px', height: 'auto', border: '1px solid #ccc', borderRadius: '4px', marginRight: '10px' }} />
+                  ) : (
+                    <div style={{ width: '200px', height: '50px', border: '1px dashed #ccc', borderRadius: '4px', marginRight: '10px' }} />
+                  )}
+                  <span>{sig.name}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>No signatures collected yet.</p>
+          )}
+        </div>
+
+        {/* Save All Signatures Button */}
+        {/* <div style={{ textAlign: 'center', marginTop: '20px' }}>
           <button
-            onClick={() => handleOpenSignature(index)}
+            onClick={printBill}
             style={{
-              marginTop: '10px',
-              width: '100%',
+              width: '80%',
               padding: '12px',
               backgroundColor: 'black',
               color: 'white',
@@ -219,54 +266,51 @@ export default function SignatureCollection() {
               fontWeight: 'bold',
             }}
           >
-            Open Signature
+            Save All Signatures
           </button>
-        </div>
-      ))}
-
-      {/* Collected Signatures Section */}
-      <div style={{ marginTop: '20px' }}>
-        <h2 style={{ fontSize: '20px' }}>Collected Signatures</h2>
-        {signatures.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {signatures.map((sig, index) => (
-              <div key={index} style={{ display: 'flex', alignItems: 'center' }}>
-                {sig.signature ? (
-                  <img src={sig.signature} alt={`Signature of ${sig.name}`} style={{ width: '200px', height: 'auto', border: '1px solid #ccc', borderRadius: '4px', marginRight: '10px' }} />
-                ) : (
-                  <div style={{ width: '200px', height: '50px', border: '1px dashed #ccc', borderRadius: '4px', marginRight: '10px' }} />
-                )}
-                <span>{sig.name}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>No signatures collected yet.</p>
-        )}
+        </div> */}
       </div>
 
-      {/* Save All Signatures Button */}
-      {/* <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <button
-          onClick={printBill}
-          style={{
-            width: '80%',
-            padding: '12px',
-            backgroundColor: 'black',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-          }}
-        >
-          Print Bill
-        </button>
-      </div> */}
+      {/* Modal for Terms Acceptance */}
+      <Modal
+        isOpen={isModalOpen && !isTermsAccepted}
+        onRequestClose={() => setIsModalOpen(false)}
+        style={{
+          content: {
+            top: '50%',
+            left: '50%',
+            right: 'auto',
+            bottom: 'auto',
+            transform: 'translate(-50%, -50%)',
+            width: '400px',
+            height: '200px',
+            overflow: 'hidden', // Prevent scrolling inside the modal
+          },
+        }}
+      >
+        <h2 style={{ textAlign: 'center' }}>Accept Terms</h2>
+        <p style={{ textAlign: 'center' }}>Please accept the terms to proceed.</p>
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <button
+            onClick={handleAcceptTerms}
+            style={{
+              padding: '12px',
+              backgroundColor: 'black',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            I Accept
+          </button>
+        </div>
+      </Modal>
 
       {/* Modal for Signature */}
       <Modal
-        isOpen={isModalOpen}
+        isOpen={isModalOpen && isTermsAccepted}
         onRequestClose={() => setIsModalOpen(false)}
         style={{
           content: {
@@ -277,6 +321,7 @@ export default function SignatureCollection() {
             transform: 'translate(-50%, -50%)',
             width: '400px',
             height: '300px',
+            overflow: 'hidden', // Prevent scrolling inside the modal
           },
         }}
       >
@@ -314,7 +359,6 @@ export default function SignatureCollection() {
           </button>
         </div>
       </Modal>
-    </div>
     </div>
   );
 }
