@@ -288,9 +288,9 @@ export default function Form() {
             </div>
           )}
 
-          <button type="submit" style={{ ...buttonStyle, marginBottom: '10px' }}>Submit</button>
-          <button type="button" onClick={storeData} style={buttonStyle}>Save to Database</button>
-          <button type="button" onClick={clearAllTickets} style={buttonStyle}>Clear All Tickets</button>
+          <button type="button" onClick={storeData} style={buttonStyle}>Submit</button>
+          <button type="submit" style={{ ...buttonStyle, marginBottom: '10px' }}>Generate Bill</button>
+          {/* <button type="button" onClick={clearAllTickets} style={buttonStyle}>Clear All Tickets</button> */}
         </form>
 
         {bill && (
