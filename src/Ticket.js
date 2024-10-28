@@ -86,6 +86,10 @@ export default function TicketsPage() {
 
   // Render signature status for people
   const renderSignatureStatus = (people) => {
+    if (!Array.isArray(people)) {
+      return 'Signature status unknown'; // Fallback message if people is not an array
+    }
+    
     const allSigned = people.every(person => person.signature);
     return allSigned ? 'Signed' : 'Unsigned';
   };
