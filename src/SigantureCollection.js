@@ -274,41 +274,97 @@ export default function SignatureCollection() {
       </div>
 
       {/* Modal for Terms Acceptance */}
-      <Modal
-        isOpen={isModalOpen && !isTermsAccepted}
-        onRequestClose={() => setIsModalOpen(false)}
-        style={{
-          content: {
-            top: '50%',
-            left: '50%',
-            right: 'auto',
-            bottom: 'auto',
-            transform: 'translate(-50%, -50%)',
-            width: '400px',
-            height: '200px',
-            overflow: 'hidden', // Prevent scrolling inside the modal
-          },
-        }}
-      >
-        <h2 style={{ textAlign: 'center' }}>Accept Terms</h2>
-        <p style={{ textAlign: 'center' }}>Please accept the terms to proceed.</p>
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <button
-            onClick={handleAcceptTerms}
-            style={{
-              padding: '12px',
-              backgroundColor: 'black',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-            }}
-          >
-            I Accept
-          </button>
-        </div>
-      </Modal>
+<Modal
+  isOpen={isModalOpen && !isTermsAccepted}
+  onRequestClose={() => setIsModalOpen(false)}
+  style={{
+    content: {
+      top: '50%',
+      left: '50%',
+      right: 'auto',
+      bottom: 'auto',
+      transform: 'translate(-50%, -50%)',
+      width: '90%', // Responsive width
+      maxWidth: '600px', // Maximum width
+      height: '70%', // Responsive height
+      maxHeight: '400px', // Maximum height
+      border: '1px solid #ccc', // Thin border
+      borderRadius: '8px', // Rounded corners
+      overflow: 'hidden', // Prevent scrolling of the modal itself
+    },
+  }}
+>
+  {/* <div style={{ 
+      backgroundColor: 'black', // Title bar background
+      color: 'white', // Title bar text color
+      padding: '10px', // Padding for title bar
+      textAlign: 'center', 
+      fontWeight: 'bold',
+      position: 'sticky',
+      top: 0, // Fix the title at the top
+      zIndex: 1, // Ensure it's above other content
+  }}>
+    Accept Terms
+  </div> */}
+  <div style={{ 
+      padding: '10px', // Padding for terms content
+      height: 'calc(100% - 80px)', // Adjust height for title and button
+      overflowY: 'auto', // Enable vertical scrolling
+      overflowX: 'hidden', // Hide horizontal scrolling
+      scrollbarWidth: 'none', // For Firefox
+      '-ms-overflow-style': 'none', // For Internet Explorer and Edge
+  }}>
+    <h1 align="center">Terms And Conditions</h1>
+    <p style={{ marginBottom: '10px' }}>Please accept the terms to proceed.</p>
+    <p>Terms and Conditions</p>
+    <p>1. Introduction</p>
+    <p>Welcome to [Your Company Name]! These Terms and Conditions govern your use of our services and website. By accessing or using our services, you agree to comply with these terms. If you do not agree, please do not use our services.</p>
+    <p>2. Definitions</p>
+    <p>"Services" refers to the trampoline park activities, including but not limited to trampoline jumping, soft play, and any other related services provided by [Your Company Name].</p>
+    <p>"You" or "Your" refers to the individual or entity using our services.</p>
+    <p>3. Acceptance of Terms</p>
+    <p>By using our services, you confirm that you have read, understood, and agree to these Terms and Conditions. If you are under the age of 18, you must have a parent or guardian’s consent to use our services.</p>
+    <p>4. User Responsibilities</p>
+    <p>You must provide accurate and complete information when booking or using our services.</p>
+    <p>You agree to comply with all rules and regulations set forth by [Your Company Name], including safety rules and guidelines.</p>
+    <p>You are responsible for the conduct of any minors in your care while using our services.</p>
+    <p>5. Health and Safety</p>
+    <p>You acknowledge that trampoline activities can be dangerous and may result in injury. You agree to assume all risks associated with your participation.</p>
+    <p>You are required to inform our staff of any medical conditions or concerns before participating in our activities.</p>
+    <p>6. Waiver and Release of Liability</p>
+    <p>By participating in our activities, you agree to waive any claims against [Your Company Name], its owners, employees, and affiliates for any injuries or damages arising from your participation.</p>
+    <p>7. Changes to Terms</p>
+    <p>[Your Company Name] reserves the right to modify these Terms and Conditions at any time. Any changes will be posted on our website, and your continued use of our services constitutes acceptance of the modified terms.</p>
+    <p>8. Governing Law</p>
+    <p>These Terms and Conditions are governed by the laws of [Your State/Country]. Any disputes arising from these terms will be resolved in the courts of [Your Jurisdiction].</p>
+    <p>9. Contact Information</p>
+    <p>If you have any questions or concerns about these Terms and Conditions, please contact us at:</p>
+    <p>Email: [Your Email]</p>
+    <p>Phone: [Your Phone Number]</p>
+    <p>Address: [Your Company Address]</p>
+  </div>
+  <div style={{ textAlign: 'center', padding: '10px', position: 'relative' }}>
+    <button
+      onClick={handleAcceptTerms}
+      style={{
+        padding: '12px 20px', // Smaller button size
+        backgroundColor: 'black', // Button background color
+        color: 'white', // Button text color
+        border: '1px solid #ccc', // Thin border for button
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        bottom: '10px', // Distance from the bottom
+        transform: 'translateX(150%)', // Center alignment adjustment
+      }}
+    >
+      Accept Terms
+    </button>
+  </div>
+</Modal>
+
+
+
 
       {/* Modal for Signature */}
       <Modal
