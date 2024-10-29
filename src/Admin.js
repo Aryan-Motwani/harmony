@@ -1,19 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import client from './sanityClient';
+import './Admin.css'; // Assuming you have an Admin.css file for additional styling.
 
 export default function Admin() {
-  // State for login
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // State for pricing
+  const [selectedActivity, setSelectedActivity] = useState('trampoline');
   const [pricing, setPricing] = useState({
-    trampoline: { "30 min": 100, "60 min": 150, "90 min": 200 },
-    dodgeball: { "30 min": 120, "60 min": 170, "90 min": 220 },
-    socks: { small: 30, medium: 35, large: 40 },
+    trampoline: [],
+    softplay: 0,
+    socks: {},
   });
 
-  // Handle login submission
+  useEffect(() => {
+    const fetchPricingData = async () => {
+      try {
+        const data = await client.fetch(`*[_id == "2ce3cd1c-f62b-4d88-90fc-4ef9c024ee87"][0]{
+          trampoline,
+          softplay,
+          socks
+        }`);
+        
+        // Assign fetched data to state
+        setPricing({
+          trampoline: data.trampoline || [],
+          softplay: data.softplay || 0,
+          socks: data.socks || {},
+        });
+      } catch (error) {
+        console.error('Error fetching pricing data:', error);
+      }
+    };
+
+    fetchPricingData();
+  }, []);
+
   const handleLogin = (e) => {
     e.preventDefault();
     if (username === 'admin' && password === 'yourpassword') {
@@ -23,68 +45,121 @@ export default function Admin() {
     }
   };
 
-  // Handle price change
-  const handlePriceChange = (activityType, timeOrSize, value) => {
-    setPricing(prevPricing => ({
-      ...prevPricing,
-      [activityType]: {
-        ...prevPricing[activityType],
-        [timeOrSize]: Number(value)
+  const handlePriceChange = (category, key, value) => {
+    setPricing((prevPricing) => {
+      if (category === 'trampoline') {
+        const updatedPrices = [...prevPricing[category]];
+        updatedPrices[key] = Number(value);
+        return { ...prevPricing, [category]: updatedPrices };
+      } else if (category === 'socks') {
+        return { ...prevPricing, [category]: { ...prevPricing[category], [key]: Number(value) } };
+      } else {
+        return { ...prevPricing, [category]: Number(value) };
       }
-    }));
+    });
   };
 
-  // Render login form if not logged in
+  const handleSubmit = async () => {
+    try {
+      await client
+        .patch('2ce3cd1c-f62b-4d88-90fc-4ef9c024ee87') // Replace with the correct Sanity document ID
+        .set({ trampoline: pricing.trampoline, softplay: pricing.softplay, socks: pricing.socks })
+        .commit();
+      alert('Pricing updated successfully!');
+    } catch (error) {
+      console.error('Error updating pricing:', error);
+    }
+  };
+
   if (!isLoggedIn) {
     return (
-      <div style={{ maxWidth: '400px', margin: 'auto', padding: '20px', textAlign: 'center' }}>
+      <div className="admin-container">
         <h2>Admin Login</h2>
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '10px' }}>
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '10px' }}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit">Login</button>
+        <form onSubmit={handleLogin} className="login-form">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="login-input"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="login-input"
+          />
+          <button type="submit" className="login-button">Login</button>
         </form>
       </div>
     );
   }
 
-  // Render pricing form if logged in
   return (
-    <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
+    <div className="admin-panel">
       <h2>Admin Panel</h2>
-      <h3>Update Pricing</h3>
-      {Object.keys(pricing).map((activityType) => (
-        <div key={activityType} style={{ marginBottom: '20px' }}>
-          <h4>{activityType.charAt(0).toUpperCase() + activityType.slice(1)} Pricing</h4>
-          {Object.keys(pricing[activityType]).map((timeOrSize) => (
-            <div key={timeOrSize} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-              <label style={{ marginRight: '10px', width: '100px' }}>{timeOrSize}:</label>
+
+      <div className="activity-switch">
+        <button onClick={() => setSelectedActivity('trampoline')} className={`activity-button ${selectedActivity === 'trampoline' ? 'active' : ''}`}>
+          Trampoline Prices
+        </button>
+        <button onClick={() => setSelectedActivity('softplay')} className={`activity-button ${selectedActivity === 'softplay' ? 'active' : ''}`}>
+          Softplay Price
+        </button>
+      </div>
+
+      {selectedActivity === 'trampoline' && (
+        <>
+          <h3>Session Prices</h3>
+          <div className="pricing-row">
+            {pricing.trampoline.map((price, index) => (
+              <div key={`trampoline-${index}`} className="pricing-input">
+                <label>Price {index + 1}:</label>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => handlePriceChange('trampoline', index, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {selectedActivity === 'softplay' && (
+        <>
+          <h3>Softplay Price</h3>
+          <div className="pricing-row">
+            <div className="pricing-input">
+              <label>Softplay:</label>
               <input
                 type="number"
-                value={pricing[activityType][timeOrSize]}
-                onChange={(e) => handlePriceChange(activityType, timeOrSize, e.target.value)}
+                value={pricing.softplay}
+                onChange={(e) => handlePriceChange('softplay', null, e.target.value)}
               />
             </div>
-          ))}
-        </div>
-      ))}
-      <button onClick={() => console.log("Updated Pricing:", pricing)}>
+          </div>
+        </>
+      )}
+
+      <h3>Socks Pricing</h3>
+      <div className="socks-pricing">
+        {Object.keys(pricing.socks).map((size) => (
+          <div key={size} className="socks-input">
+            <label>{size}:</label>
+            <input
+              type="number"
+              value={pricing.socks[size]}
+              onChange={(e) => handlePriceChange('socks', size, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+
+      <button onClick={handleSubmit} className="submit-button">
         Save Changes
       </button>
     </div>

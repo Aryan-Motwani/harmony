@@ -17,7 +17,6 @@ export default function SignatureCollection() {
   const canvasRefs = useRef([]);
   const isDrawing = useRef(false);
 
-  // Fetch ticket data based on ID
   useEffect(() => {
     const fetchTicketData = async () => {
       try {
@@ -39,9 +38,11 @@ export default function SignatureCollection() {
     fetchTicketData();
   
     // Set up a listener for real-time updates
-    const subscription = client.listen(`*[_type == "ticket" && _id == $id]`, { id }).subscribe(update => {
-      if (update.operation === 'update') {
-        const updatedTicket = update.result;
+    const subscription = client.listen(`*[_type == "ticket" && _id == $id]`, { id }).subscribe((update) => {
+      const updatedTicket = update.result;
+  
+      // Listen only for updates to 'people' array and set new signatures
+      if (update.operation === 'update' && updatedTicket.people) {
         const updatedPeople = updatedTicket.people.map(person => ({
           name: person.name,
           signature: person.signature || null,
@@ -54,6 +55,7 @@ export default function SignatureCollection() {
     // Clean up the listener on unmount
     return () => subscription.unsubscribe();
   }, [id]);
+  
 
   // Open signature modal
   const handleOpenSignature = (index) => {

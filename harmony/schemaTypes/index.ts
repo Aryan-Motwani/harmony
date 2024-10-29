@@ -97,10 +97,11 @@ import {productType} from './documents/product'
 import { ticketType } from './documents/Ticket'
 import {productVariantType} from './documents/productVariant'
 
-const documents = [collectionType, colorThemeType, pageType, productType, productVariantType, ticketType]
+const documents = [collectionType, colorThemeType, pageType, productType, productVariantType, ticketType, priceType]
 
 import {homeType} from './singletons/homeType'
 import {settingsType} from './singletons/settingsType'
+import { priceType } from './documents/price'
 
 const singletons = [homeType, settingsType]
 

@@ -23,25 +23,75 @@ export default function Form() {
   const [mixPayment, setMixPayment] = useState([{ method: 'cash', amount: '' }, { method: 'cash', amount: '' }]);
   const [bill, setBill] = useState('');
   const [data, setData] = useState([]);
+  const [prices, setPrices] = useState([]);
   const [error, setError] = useState(''); // Error state for mix payment validation
   const [phoneError, setPhoneError] = useState(''); // Error state for mix payment validation
+  const [durationPricing, setDurationPricing] = useState({
+    Trampoline: { '30 min': 0, '60 min': 0, '90 min': 0 },
+    Softplay: { '30 min':0, '60 min':0, '90 min':0 },
+  }); // Error state for mix payment validation
   const billRef = useRef(null);
 
 
-  const durationPricing = {
-    Trampoline: { '30 min': 100, '60 min': 200, '90 min': 300 },
-    Softplay: { '30 min': 80, '60 min': 160, '90 min': 240 },
+
+  const durationPricingg = {
+    Trampoline: { '30 min': 0, '60 min': 0, '90 min': 0 },
+    Softplay: { '30 min':0, '60 min':0, '90 min':0 },
   }
 
-  const socksPricing = {
+  let socksPricing = {
     Trampoline: { S: 20, M: 30, L: 40 },   // prices per size
     Softplay: { S: 15, M: 25, L: 35 },
   };
   
 
   useEffect(() => {
-    client.fetch('*[_type == "ticket"]').then(setData).catch(console.error);
+    const fetchData = async () => {
+      try {
+        const ticketsData = await client.fetch('*[_type == "ticket"]');
+        setData(ticketsData);  // Set tickets data after fetching
+        
+        const pricesData = await client.fetch('*[_type == "price"]');
+        setPrices(pricesData); // Set prices data after fetching
+  
+        // Now execute the additional logic with pricesData
+        if (pricesData && pricesData.length > 0) {
+          socksPricing = pricesData[0]['socks'];
+          console.log(pricesData);
+          
+          setDurationPricing({
+            Trampoline: { '30 min':pricesData[0]['trampoline'][0], '60 min':pricesData[0]['trampoline'][1], '90 min':pricesData[0]['trampoline'][1] },
+            Softplay: { '30 min':pricesData[0]['softplay'], '60 min':pricesData[0]['softplay'], '90 min':pricesData[0]['softplay'] },
+          })
+          // durationPricing["Trampoline"]["30 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Trampoline"]["60 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Trampoline"]["90 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Softplay"]["30 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Softplay"]["60 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Softplay"]["90 min"] = pricesData[0]['trampoline'][0]
+          // durationPricing["Trampoline"]["30 min"] = 900
+          // durationPricing["Trampoline"]["60 min"] = 900
+          // durationPricing["Trampoline"]["90 min"] = 900
+          // durationPricing["Softplay"]["30 min"] = 900
+          // durationPricing["Softplay"]["60 min"] = 900
+          // durationPricing["Softplay"]["90 min"] = 900
+          
+          // console.log(durationPricing);
+          
+  
+          
+  
+          // Store durationPricing and socksPricing in state if needed
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+  
+    fetchData();
   }, []);
+  
+  
 
   useEffect(() => {
     // Update people state when numPeople changes
@@ -104,7 +154,11 @@ export default function Form() {
   };
 
   const handleSubmit = (e) => {
+    console.log(durationPricing["Softplay"]);
+    console.log(durationPricing["Trampoline"]);
+    
     e.preventDefault();
+    
     const packagePrice = durationPricing[activityType][selectedDuration];
     const socksTotal = needsSocks ? numPeople * 30 : 0;
     const discountAmount = discountType === 'Rs' ? discount : (packagePrice * numPeople + socksTotal) * (discount / 100);
@@ -268,6 +322,9 @@ const storeData = async () => {
   const clearAllTickets = async () => {
     try {
       const tickets = await client.fetch('*[_type == "ticket"]{_id}');
+      const prices = await client.fetch('*[_type == "price"]');
+      console.log(prices);
+      
       if (tickets.length === 0) return console.log('No tickets to delete.');
 
       const ticketIds = tickets.map((ticket) => ticket._id);
