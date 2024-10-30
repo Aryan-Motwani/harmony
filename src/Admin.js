@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import client from './sanityClient';
 import './Admin.css'; // Assuming you have an Admin.css file for additional styling.
+import Navbar from './Navbar';
 
 export default function Admin() {
   const [username, setUsername] = useState('');
@@ -73,8 +74,10 @@ export default function Admin() {
 
   if (!isLoggedIn) {
     return (
+      <div>
+        <Navbar/>
       <div className="admin-container">
-        <h2>Admin Login</h2>
+        <h2 align="center">Admin Login</h2>
         <form onSubmit={handleLogin} className="login-form">
           <input
             type="text"
@@ -95,12 +98,15 @@ export default function Admin() {
           <button type="submit" className="login-button">Login</button>
         </form>
       </div>
+      </div>
     );
   }
 
   return (
+    <div>
+      <Navbar/>
     <div className="admin-panel">
-      <h2>Admin Panel</h2>
+      <h2 align="center">Admin Panel</h2>
 
       <div className="activity-switch">
         <button onClick={() => setSelectedActivity('trampoline')} className={`activity-button ${selectedActivity === 'trampoline' ? 'active' : ''}`}>
@@ -121,6 +127,7 @@ export default function Admin() {
                 <input
                   type="number"
                   value={price}
+                  style={{width: '100%', padding: '8px', marginTop: '5px' }}
                   onChange={(e) => handlePriceChange('trampoline', index, e.target.value)}
                 />
               </div>
@@ -138,6 +145,8 @@ export default function Admin() {
               <input
                 type="number"
                 value={pricing.softplay}
+                style={{padding: '8px', margin: '5px 10px' }}
+
                 onChange={(e) => handlePriceChange('softplay', null, e.target.value)}
               />
             </div>
@@ -153,6 +162,7 @@ export default function Admin() {
             <input
               type="number"
               value={pricing.socks[size]}
+              style={{width: '100%', padding: '8px', marginTop: '5px' }}
               onChange={(e) => handlePriceChange('socks', size, e.target.value)}
             />
           </div>
@@ -162,6 +172,7 @@ export default function Admin() {
       <button onClick={handleSubmit} className="submit-button">
         Save Changes
       </button>
+    </div>
     </div>
   );
 }

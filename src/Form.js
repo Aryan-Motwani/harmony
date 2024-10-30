@@ -14,7 +14,7 @@ export default function Form() {
   const [numPeople, setNumPeople] = useState(1);
   const [people, setPeople] = useState([{ name: '', signature: 'h' }]);
   const [needsSocks, setNeedsSocks] = useState(false);
-  const [socksSizes, setSocksSizes] = useState({ S: 0, M: 0, L: 0 });
+  const [socksSizes, setSocksSizes] = useState({ XS:0, S: 0, M: 0, L: 0, XL :0 });
   const [selectedDuration, setSelectedDuration] = useState('30 min');
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState('%'); // Default discount type to percentage
@@ -30,6 +30,10 @@ export default function Form() {
     Trampoline: { '30 min': 0, '60 min': 0, '90 min': 0 },
     Softplay: { '30 min':0, '60 min':0, '90 min':0 },
   }); // Error state for mix payment validation
+  const [socksPricing, setSocksPricing] = useState({
+    Trampoline: { XS: 0, S: 0, M: 0, L: 0, XL:0 },   // prices per size
+    Softplay: { XS: 0, S: 0, M: 0, L: 0, XL:0 },
+  }); // Error state for mix payment validation
   const billRef = useRef(null);
 
 
@@ -39,7 +43,7 @@ export default function Form() {
     Softplay: { '30 min':0, '60 min':0, '90 min':0 },
   }
 
-  let socksPricing = {
+  let socksPricingg = {
     Trampoline: { S: 20, M: 30, L: 40 },   // prices per size
     Softplay: { S: 15, M: 25, L: 35 },
   };
@@ -56,12 +60,16 @@ export default function Form() {
   
         // Now execute the additional logic with pricesData
         if (pricesData && pricesData.length > 0) {
-          socksPricing = pricesData[0]['socks'];
+          // socksPricing = pricesData[0]['socks'];
           console.log(pricesData);
           
           setDurationPricing({
             Trampoline: { '30 min':pricesData[0]['trampoline'][0], '60 min':pricesData[0]['trampoline'][1], '90 min':pricesData[0]['trampoline'][1] },
             Softplay: { '30 min':pricesData[0]['softplay'], '60 min':pricesData[0]['softplay'], '90 min':pricesData[0]['softplay'] },
+          })
+          setSocksPricing({
+            Trampoline: { XS: pricesData[0]['socks']['XS'], S: pricesData[0]['socks']['S'], M: pricesData[0]['socks']['M'], L: pricesData[0]['socks']['L'], XL:pricesData[0]['socks']['XL'] },   // prices per size
+            Softplay: { XS: pricesData[0]['socks']['XS'], S: pricesData[0]['socks']['S'], M: pricesData[0]['socks']['M'], L: pricesData[0]['socks']['L'], XL:pricesData[0]['socks']['XL'] },   // prices per size
           })
           // durationPricing["Trampoline"]["30 min"] = pricesData[0]['trampoline'][0]
           // durationPricing["Trampoline"]["60 min"] = pricesData[0]['trampoline'][0]
@@ -123,6 +131,7 @@ export default function Form() {
   };
 
   const validateSocks = () => {
+    if(!needsSocks) return true
     const totalSocks = Object.values(socksSizes).reduce((a, b) => a + b, 0);
     if (totalSocks != numPeople) {
       setError(`Socks quantity does not match`);
@@ -160,7 +169,16 @@ export default function Form() {
     e.preventDefault();
     
     const packagePrice = durationPricing[activityType][selectedDuration];
-    const socksTotal = needsSocks ? numPeople * 30 : 0;
+
+    // const socksTotal = needsSocks ? numPeople * 30 : 0;
+    const socksTotal = needsSocks
+    ? Object.entries(socksSizes).reduce((total, [size, qty]) => {
+        const costPerPair = socksPricing[activityType][size] || 0;
+        return total + costPerPair * qty;
+      }, 0)
+    : 0;
+
+
     const discountAmount = discountType === 'Rs' ? discount : (packagePrice * numPeople + socksTotal) * (discount / 100);
     const total = packagePrice * numPeople + socksTotal - discountAmount;
     
@@ -170,8 +188,8 @@ export default function Form() {
 
     const billDetails = (
       <div className='billDetails' style={{ textAlign: 'center' }}>
-        <h2>Health & Harmony</h2>
-        <p>Health & Harmony<br />Cannaught Place, Delhi<br />Phone: +91 7888106698</p>
+        <h2>Trampoline Park</h2>
+        <p>Health & Harmony<br />Cidco, Aurangabad<br />Phone: +91 7888106698</p>
         <p>-------------------------------------</p>
         <table style={{ width: '100%', borderCollapse: 'collapse', opacity: 0.9 }}>
           <thead>
@@ -335,30 +353,46 @@ const storeData = async () => {
       console.error('Error clearing tickets:', error.message);
     }
   };
-
   const printBill = () => {
     const billElement = billRef.current; // Get the current element using ref
   
     // Check if the billElement is defined before calling html2canvas
     if (billElement) {
+      // Use html2canvas to capture the bill element
       html2canvas(billElement, { scale: 2 }).then((canvas) => {
         const imgData = canvas.toDataURL("image/png");
-        const width = 100; // Width in mm for PDF
-        const height = 150; // Height in mm for PDF
-        const pdf = new jsPDF({
-          orientation: "portrait",
-          unit: "mm",
-          format: [width, height]
-        });
   
-        // Add the captured image to PDF
-        pdf.addImage(imgData, "PNG", 0, 0, width, height);
-        pdf.save("bill.pdf");
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          // Set up the print document
+          printWindow.document.write('<html><head><title>Print Bill</title>');
+          printWindow.document.write('<style>');
+          printWindow.document.write('body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }');
+          printWindow.document.write('img { max-width: 100%; height: auto; }'); // Ensure the image scales properly
+          printWindow.document.write('</style>');
+          printWindow.document.write('</head><body>');
+          printWindow.document.write('<img src="' + imgData + '" />');
+          printWindow.document.write('</body></html>');
+  
+          printWindow.document.close(); // Close the document to finish rendering
+  
+          // Wait for a moment to allow the content to render before printing
+          printWindow.onload = function() {
+            printWindow.focus(); // Focus on the new window
+            printWindow.print(); // Trigger the print dialog
+            printWindow.close(); // Optionally close the window after printing
+          };
+        }
+      }).catch((error) => {
+        console.error("Error capturing bill content:", error);
       });
     } else {
       console.error("Bill element is not available.");
     }
   };
+  
+  
 
 
   return (
@@ -519,7 +553,7 @@ const storeData = async () => {
             <div style={{ display: 'grid', gap: '10px' }}>
               <label>Sock Sizes</label>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6%' }}>
-                {['S', 'M', 'L'].map((size) => (
+                {['XS', 'S'].map((size) => (
                   <div key={size} style={{ flex: '1' }}>
                     <label>{size}</label>
                     <input
@@ -532,6 +566,23 @@ const storeData = async () => {
                   </div>
                 ))}
               </div>
+              {activityType == "Trampoline" &&
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6%' }}>
+                {['M','L', 'XL',].map((size) => (
+                  <div key={size} style={{ flex: '1' }}>
+                    <label>{size}</label>
+                    <input
+                      type="number"
+                      value={socksSizes[size]}
+                      onChange={(e) => handleSocksChange(size, e.target.value)}
+                      min="0"
+                      style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+          }
             </div>
           )}
 

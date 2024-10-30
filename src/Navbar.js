@@ -14,6 +14,9 @@ export default function Navbar() {
         <li>
           <Link to="/form" style={linkStyle}>Form</Link>
         </li>
+        <li>
+          <Link to="/admin" style={linkStyle}>Admin</Link>
+        </li>
       </ul>
     </nav>
   );

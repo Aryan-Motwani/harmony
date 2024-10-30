@@ -5,6 +5,7 @@ import Navbar from './Navbar';
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState([]);
+  const [showSigned, setShowSigned] = useState(false); // State to toggle signed tickets visibility
   const navigate = useNavigate();
 
   // Function to fetch initial tickets
@@ -99,11 +100,35 @@ export default function TicketsPage() {
     navigate(`/ticket/${ticketId}`);
   };
 
+  // Separate tickets into signed and unsigned
+  const unsignedTickets = tickets.filter(ticket => renderSignatureStatus(ticket.people) === 'Unsigned');
+  const signedTickets = tickets.filter(ticket => renderSignatureStatus(ticket.people) === 'Signed');
+
   return (
     <div>
       <Navbar/>
       <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
         <h1 style={{ textAlign: 'center' }}>Tickets</h1>
+
+        <button 
+  onClick={() => setShowSigned(prev => !prev)} 
+  style={{ 
+    marginBottom: '10px', 
+    padding: '10px 15px', 
+    backgroundColor: '#333', // Black background
+    color: '#fff', 
+    border: 'none', 
+    borderRadius: '5px', 
+    cursor: 'pointer', 
+    fontSize: '16px',
+    transition: 'background-color 0.3s ease',
+  }}
+  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#555'} // Darker black on hover
+  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#333'} // Original black on mouse leave
+>
+  {showSigned ? 'Hide Signed Tickets' : 'Show Signed Tickets'}
+</button>
+
 
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
           <thead>
@@ -115,8 +140,8 @@ export default function TicketsPage() {
             </tr>
           </thead>
           <tbody>
-            {tickets.length > 0 ? (
-              tickets.map((ticket) => {
+            {unsignedTickets.length > 0 ? (
+              unsignedTickets.map((ticket) => {
                 const { date, time } = formatDateAndTime(ticket.createdAt); // Format date and time from createdAt
 
                 return (
@@ -136,8 +161,34 @@ export default function TicketsPage() {
               })
             ) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '10px' }}>No tickets available.</td>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '10px' }}>No unsigned tickets available.</td>
               </tr>
+            )}
+            {showSigned && signedTickets.length > 0 ? (
+              signedTickets.map((ticket) => {
+                const { date, time } = formatDateAndTime(ticket.createdAt); // Format date and time from createdAt
+
+                return (
+                  <tr
+                    key={ticket._id}
+                    style={{ border: '1px solid #ccc', cursor: 'pointer' }}
+                    onClick={() => handleRowClick(ticket._id)}
+                  >
+                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{ticket.customerName}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{date}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{time}</td>
+                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>
+                      {renderSignatureStatus(ticket.people)}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              showSigned && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center', padding: '10px' }}>No signed tickets available.</td>
+                </tr>
+              )
             )}
           </tbody>
         </table>
