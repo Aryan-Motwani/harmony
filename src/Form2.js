@@ -26,7 +26,6 @@ export default function Form() {
   const [data, setData] = useState([]);
   const [prices, setPrices] = useState([]);
   const [error, setError] = useState(''); // Error state for mix payment validation
-  const [payError, setPayError] = useState(''); // Error state for mix payment validation
   const [phoneError, setPhoneError] = useState(''); // Error state for mix payment validation
   const [currTotal, setCurrTotal] = useState(0)
   const [supaPrice, setSupaPrice] = useState('')
@@ -53,10 +52,6 @@ export default function Form() {
     Trampoline: { S: 20, M: 30, L: 40 },   // prices per size
     Softplay: { S: 15, M: 25, L: 35 },
   };
-
-  const [showModal, setShowModal] = useState(false);
-  const [submissionDetails, setSubmissionDetails] = useState({});
-  const [mainToggle, setMainToggle] = useState(true);
   
 
   useEffect(() => {
@@ -149,10 +144,10 @@ export default function Form() {
   const validateMixPayment = (total) => {
     const totalMixPayment = mixPayment.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
     if (totalMixPayment !== total) {
-      setPayError(`Total mix payments (${totalMixPayment} Rs) do not match the bill amount (${total} Rs).`);
+      setError(`Total mix payments (${totalMixPayment} Rs) do not match the bill amount (${total} Rs).`);
       return false;
     }
-    setPayError('');
+    setError('');
     return true;
   };
 
@@ -183,7 +178,7 @@ export default function Form() {
             '60 min': prices?.softplay?.['60'] || 0, 
             '90 min': prices?.softplay?.['90'] || 0 
         }
-      });
+    });
 
     setSocksPricing({
         Trampoline: { 
@@ -201,12 +196,6 @@ export default function Form() {
             XL: prices?.socks?.XL || 0 
         }
     });
-
-    if(prices?.discount){
-      setDiscount(prices?.discount)
-    }
-
-    setMainToggle(prices?.toggleState)
 
     console.log("Fetched prices:", data);
 };
@@ -234,7 +223,7 @@ export default function Form() {
     
 
     if (paymentMethod === 'mix' && !validateMixPayment(total)) return;
-    if (needsSocks && validateSocks()) return;
+    if (!validateSocks()) return;
 
     const billDetails = (
       <div className='billDetails' style={{ textAlign: 'center' }}>
@@ -312,7 +301,6 @@ const tableCellStyle = {
 
 
 const storeData = async () => {
-  
   const packagePrice = durationPricing[activityType][selectedDuration];
   let distribution = {'cash' : 0, 'credit card' : 0, 'upi' : 0}
 
@@ -333,7 +321,7 @@ const storeData = async () => {
   const totalAmount = subtotal - discountAmount;
 
   if (paymentMethod === 'mix' && !validateMixPayment(totalAmount)) return;
-  if (needsSocks && validateSocks()) return;
+  if (!validateSocks()) return;
 
   // Prepare socks details to store
   const socksDetails = needsSocks
@@ -354,9 +342,6 @@ const storeData = async () => {
         distribution[i.method] = i.amount
       })
     }
-
-  
-
 
   // Create the bill object with all details
   const bill = {
@@ -392,13 +377,9 @@ const storeData = async () => {
     createdAt: new Date().toISOString(),
   };
 
-  console.log({mainToggle,}, !mainToggle);
+  console.log(ticketData);
   
-  if(!mainToggle) return;
-  
-  console.log("await");
-  
-  // await supabase.from("Tickets").insert({name : customerName, data : ticketData})
+  await supabase.from("Tickets").insert({name : customerName, data : ticketData})
 };
 
   const printBill = () => {
@@ -470,176 +451,104 @@ const storeData = async () => {
     setCurrTotal(totalAmount);
   }
 
-  const handleClick = async () => {
-    const bill = {
-      entry: {
-        activityType : 'Trampoline',
-        duration: '60 min',
-        packagePrice : 30,
-        quantity: 3,
-        totalCost: 360,
-      },
-      socks: [
-        {size: 'XS', quantity: 1, costPerPair: 50, totalCost: 50},
-        {size: 'X', quantity: 2, costPerPair: 80, totalCost: 160}
-      ],
-      subtotal : 360,
-      discount: 10,
-      totalAfterDiscount: 360,
-      paymentMethod : 'cash', 
-      distribution : {'cash': 0, 'credit card': 270, 'upi': 0}
-    };
-  
-  
-    // Prepare ticket data with bill details
-    const ticketData = {
-      _type: 'ticket',
-      customerName : 'Walter White',
-      phoneNumber: 9890009933,
-      people : [{name : 'Walter White'}, {name : 'Jesse Pinkman'}, {name : 'Gustavo Fring'}],
-      date : "22-10-2024",
-      time : "19:3:43",
-      duration: "60 min",
-      totalAmount : 360,
-      status:'false', 
-      bill,  // Store bill object here
-      createdAt: new Date().toISOString(),
-    };
-
-    await supabase.from("ticketss").insert(
-      {name : "aryan", data : {a : ''}},
-      {name : "new", data : {a : ''}}
-    )}
-
-    const handleSubmitClick = () => {
-      console.log("entered");
-      
-      const details = {
-        activityType,
-        numPeople,
-        selectedDuration,
-        bill, // Use your bill object here
-      };
-      setSubmissionDetails(details);
-      setShowModal(true); // Open the modal
-    };
-  
-    const handleConfirm = () => {
-      setShowModal(false);
-      storeData(); // Call your storeData function here
-    };
-  
-    const handleCancel = () => {
-      setShowModal(false);
-    };
-
   return (
     <div>
       <Navbar/>
-      <div className='mx-auto p-6 font-sans'>
-      <header className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Health and Harmony</h1>
-          <p className="text-gray-600">Trampoline Park Customer Information</p>
-          <h1 className="text-xl font-semibold text-gray-900 mt-4">Grand Total {currTotal}</h1>
+      <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <header style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <h1>Health and Harmony</h1>
+          <p>Trampoline Park Customer Information</p>
+          <h1>Grand Total {currTotal}</h1>
         </header>
 
-        <form
-  onSubmit={handleSubmit}
-  className="grid gap-6 bg-white shadow-lg p-6 rounded-lg w-full max-w-3xl mx-auto">
-          {/* Activity Selection */}
-          <div>
-            <label className="block text-gray-700 font-medium">Activity</label>
-            <div className="flex gap-4 mt-2">
+        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '20px' }}>
+        <div className="form-group">
+            <label>Activity</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
               {['Trampoline', 'Softplay'].map((activity) => (
                 <button
                   key={activity}
                   type="button"
                   onClick={() => setActivityType(activity)}
-                  className={`flex-1 px-4 py-2 text-center border rounded-md ${
-                    activityType === activity
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'border-gray-300 text-gray-700'
-                  }`}
+                  style={{
+                    flex: '1',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: `2px solid ${activityType === activity ? 'black' : '#ccc'}`,
+                    backgroundColor: activityType === activity ? 'black' : 'white',
+                    color: activityType === activity ? 'white' : 'black',
+                    cursor: 'pointer',
+                  }}
                 >
                   {activity}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Customer Name */}
           <div>
-            <label className="block text-gray-700 font-medium">Customer Name</label>
+            <label>Customer Name</label>
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
+              style={inputStyle}
             />
           </div>
 
-          {/* Phone Number */}
           <div>
-            <label className="block text-gray-700 font-medium">Phone Number</label>
+            <label>Phone Number</label>
             <input
               type="number"
-              min="0"
-              onWheel={(e) => e.target.blur()}
-              
               value={phone}
               onChange={(e) => {
-                validatePhone();
-                setPhone(e.target.value);
-              }}
-              className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
+                validatePhone()
+                setPhone(e.target.value)}
+              }
+              style={inputStyle}
             />
-            {phoneError && <p className="text-sm text-red-500 mt-1">{phoneError}</p>}
+            {phoneError && <p style={{ color: 'red' }}>{phoneError}</p>}
           </div>
 
-          {/* Number of People */}
           <div>
-            <label className="block text-gray-700 font-medium">Number of People</label>
+            <label>Number of People</label>
             <input
               type="number"
-              onWheel={(e) => e.target.blur()}
-              
               min="1"
               value={numPeople}
               onChange={handleNumPeopleChange}
-              className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
+              style={inputStyle}
             />
           </div>
 
-          {/* Individual Person Details */}
           {people.map((person, index) => (
-            <div key={index} className="mb-2">
+            <div key={index} style={{ marginBottom: '10px' }}>
               <input
                 type="text"
                 value={person.name}
                 onChange={(e) => handlePersonChange(index, e.target.value)}
                 placeholder={`Person ${index + 1} Name`}
-                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
+                style={inputStyle}
               />
             </div>
           ))}
 
-          {/* Duration Selection */}
           <div>
-            <label className="block text-gray-700 font-medium">Duration</label>
-            <div className="flex gap-4 mt-2">
+            <label>Duration</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
               {['30 min', '60 min', '90 min'].map((duration) => (
                 <button
                   key={duration}
                   type="button"
-                  onClick={() => {
-                    setSelectedDuration(duration);
-                    calculateTotal(numPeople, duration);
+                  onClick={() => {setSelectedDuration(duration); calculateTotal(numPeople, duration)}}
+                  style={{
+                    flex: '1',
+                    padding: '12px',
+                    borderRadius: '4px',
+                    border: `2px solid ${selectedDuration === duration ? 'black' : '#ccc'}`,
+                    backgroundColor: selectedDuration === duration ? 'black' : 'white',
+                    color: selectedDuration === duration ? 'white' : 'black',
+                    cursor: 'pointer',
                   }}
-                  className={`flex-1 px-4 py-2 text-center border rounded-md ${
-                    selectedDuration === duration
-                      ? 'bg-gray-800 text-white border-gray-800'
-                      : 'border-gray-300 text-gray-700'
-                  }`}
                 >
                   {duration}
                 </button>
@@ -647,13 +556,13 @@ const storeData = async () => {
             </div>
           </div>
 
-          {/* Payment Method */}
+
           <div>
-            <label className="block text-gray-700 font-medium">Payment Method</label>
+            <label>Payment Method</label>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
+              style={inputStyle}
             >
               <option value="cash">Cash</option>
               <option value="upi">UPI</option>
@@ -662,162 +571,112 @@ const storeData = async () => {
             </select>
           </div>
 
-          {/* Mixed Payment Details */}
-          {paymentMethod === 'mix' &&
-            mixPayment.map((payment, index) => (
-              <div key={index} className="flex gap-4 mt-2">
-                <select
-                  value={payment.method}
-                  onChange={(e) => handleMixPaymentChange(index, 'method', e.target.value)}
-                  className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
-                >
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI</option>
-                  <option value="credit card">Credit Card</option>
-                </select>
-                <input
-                  type="number"
-                  min="0"
-                  onWheel={(e) => e.target.blur()}
-                  
-                  placeholder="Amount"
-                  value={payment.amount}
-                  onChange={(e) => handleMixPaymentChange(index, 'amount', e.target.value)}
-                  className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
-                />
-              </div>
-            ))}
-            {payError && <p className="text-sm text-red-500 mt-1">{payError}</p>}
+          {paymentMethod === 'mix' && (
+            <>
+              {mixPayment.map((payment, index) => (
+                <div key={index} style={{ display: 'flex', gap: '10px' }}>
+                  <select
+                    value={payment.method}
+                    onChange={(e) => handleMixPaymentChange(index, 'method', e.target.value)}
+                    style={{ flex: '1', padding: '8px' }}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="upi">UPI</option>
+                    <option value="credit card">Credit Card</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Amount"
+                    value={payment.amount}
+                    onChange={(e) => handleMixPaymentChange(index, 'amount', e.target.value)}
+                    style={{ flex: '1', padding: '8px' }}
+                  />
+                </div>
+              ))}
+            </>
+          )}
 
-          {/* Socks Section */}
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
             <input
               type="checkbox"
               checked={needsSocks}
               onChange={(e) => setNeedsSocks(e.target.checked)}
-              className="form-checkbox h-5 w-5"
+              style={{ marginRight: '8px' }}
             />
-            <label className="text-gray-700">I need socks</label>
+            <label>I need socks</label>
           </div>
 
           {needsSocks && (
-            <div className="grid gap-4">
-              <label className="text-gray-700 font-medium">Sock Sizes</label>
-              <div className="flex gap-4">
-                {['XS', 'S', 'M', 'L', 'XL'].map((size) => (
-                  <div key={size} className="flex-1">
-                    <label className="text-gray-700">{size}</label>
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <label>Sock Sizes</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6%' }}>
+                {['XS', 'S'].map((size) => (
+                  <div key={size} style={{ flex: '1' }}>
+                    <label>{size}</label>
                     <input
                       type="number"
-                      min="0"
-                      onWheel={(e) => e.target.blur()}
-                      
                       value={socksSizes[size]}
                       onChange={(e) => handleSocksChange(size, e.target.value)}
-                      className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300 mt-2"
+                      min="0"
+                      style={{ width: '100%', padding: '8px', marginTop: '5px' }}
                     />
                   </div>
                 ))}
               </div>
-            {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
-
+              {activityType == "Trampoline" &&
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '6%' }}>
+                {['M','L', 'XL',].map((size) => (
+                  <div key={size} style={{ flex: '1' }}>
+                    <label>{size}</label>
+                    <input
+                      type="number"
+                      value={socksSizes[size]}
+                      onChange={(e) => handleSocksChange(size, e.target.value)}
+                      min="0"
+                      style={{ width: '100%', padding: '8px', marginTop: '5px' }}
+                    />
+                  </div>
+                ))}
+              </div>}
             </div>
           )}
 
-
-      <div>
-      <label className="block text-gray-700 font-medium">Discount</label>
+          <div>
+          <label>Discount</label>
           <div style={{ display: "flex", gap: "5%" }}>
-            <div style={{ flex: "1" }}>
-              <input
-                type="number"
-                min="0"
-                onWheel={(e) => e.target.blur()}
-                
-                value={discount}
-                onChange={(e) => {
-                  const updatedDiscount = parseFloat(e.target.value) || 0; // Handle invalid inputs
-                  setDiscount(updatedDiscount); // Update state
-                  calculateTotal(numPeople, selectedDuration, socksSizes, discountType, updatedDiscount); // Pass updated discount
-                  
-                }}
-                className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
-              />
-            </div>
-            <div>
-              <select
-                value={discountType}
-                onChange={(e) => {
-                  const updatedDiscountType = e.target.value; // Get the selected discount type
-                  setDiscountType(updatedDiscountType); // Update state
-                  calculateTotal(numPeople, selectedDuration, socksSizes, updatedDiscountType, discount); // Pass updated discount type
-                }}
-                className="w-full mt-2 px-4 py-2 border rounded-md focus:outline-none focus:ring focus:ring-gray-300"
-              >
-                <option value="%">%</option>
-                <option value="Rs">Rs</option>
-              </select>
-        </div>
-      </div>
+  <div style={{ flex: "1" }}>
+    <input
+      type="number"
+      value={discount}
+      onChange={(e) => {
+        const updatedDiscount = parseFloat(e.target.value) || 0; // Handle invalid inputs
+        setDiscount(updatedDiscount); // Update state
+        calculateTotal(numPeople, selectedDuration, socksSizes, discountType, updatedDiscount); // Pass updated discount
+      }}
+      style={inputStyle}
+    />
+  </div>
+  <div>
+    <select
+      value={discountType}
+      onChange={(e) => {
+        const updatedDiscountType = e.target.value; // Get the selected discount type
+        setDiscountType(updatedDiscountType); // Update state
+        calculateTotal(numPeople, selectedDuration, socksSizes, updatedDiscountType, discount); // Pass updated discount type
+      }}
+      style={inputStyle}
+    >
+      <option value="%">%</option>
+      <option value="Rs">Rs</option>
+    </select>
+  </div>
+</div>
 
           </div>
-
-          {/* Submit Buttons */}
-          <div className="grid gap-4">
-            <button
-              type="button"
-              onClick={handleSubmitClick}
-              className="bg-gray-800 text-white py-2 rounded-md hover:bg-gray-700"
-            >
-              Submit
-            </button>
-            <button
-              type="submit"
-              className="bg-gray-800 text-white py-2 rounded-md hover:bg-gray-700"
-            >
-              Generate Bill
-            </button>
-          </div>
-
-          {/* Confirmation Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Confirm Submission</h2>
-              <p>
-                <strong>Activity:</strong> {submissionDetails.activityType}
-              </p>
-              <p>
-                <strong>Number of People:</strong> {submissionDetails.numPeople}
-              </p>
-              <p>
-                <strong>Duration:</strong> {submissionDetails.selectedDuration}
-              </p>
-              <p>
-                <strong>Bill Details:</strong>
-              </p>
-              <pre>{JSON.stringify(submissionDetails.bill, null, 2)}</pre>
-
-              <div className="flex justify-end mt-4 gap-2">
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirm}
-                  className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          <button type="button" onClick={storeData} style={buttonStyle}>Submit</button>
+          <button type="submit" style={{ ...buttonStyle, marginBottom: '10px' }}>Generate Bill</button>
+          {error && <p style={{ color: 'red' }}>{error}</p>}
         </form>
-
-        {/* <button onClick={handleClick}>Click</button> */}
 
         {bill && (
             <div
@@ -827,8 +686,8 @@ const storeData = async () => {
                 padding: '10px',
                 border: '1px solid #ccc',
                 borderRadius: '4px',
-                width: '80mm',  // Match PDF width
-                height: '230mm', // Match PDF height
+                width: '100mm',  // Match PDF width
+                height: '150mm', // Match PDF height
                 overflow: 'auto',
                 display: 'flex',
                 flexDirection: 'column',

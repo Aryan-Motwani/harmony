@@ -1,197 +1,120 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import client from './sanityClient'; // Adjust the import based on your project structure
+import { supabase } from './createClient';
 import Navbar from './Navbar';
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState([]);
-  const [showSigned, setShowSigned] = useState(false); // State to toggle signed tickets visibility
+  const [showSigned, setShowSigned] = useState(false);
   const navigate = useNavigate();
 
-  // Function to fetch initial tickets
+  // Function to fetch tickets from Supabase
   const fetchTickets = async () => {
     try {
-      const results = await client.fetch('*[_type == "ticket"]');
-      
-      // Remove duplicates and sort by date and time
-      const uniqueTickets = removeDuplicatesAndSort(results);
-      setTickets(uniqueTickets); // Set the fetched and sorted tickets
+      const { data, error } = await supabase.from('Tickets').select('*');
+      if (error) throw error;
+
+      setTickets(data);
     } catch (error) {
       console.error('Error fetching tickets:', error);
     }
   };
 
-  // Function to handle incoming data updates
-  const handleDataUpdate = (updatedTicket) => {
-    setTickets(prevTickets => {
-      const existingTicketIndex = prevTickets.findIndex(ticket => ticket._id === updatedTicket._id);
-      if (existingTicketIndex > -1) {
-        // Update existing ticket
-        const updatedTickets = [...prevTickets];
-        updatedTickets[existingTicketIndex] = updatedTicket;
-        return removeDuplicatesAndSort(updatedTickets);
-      }
-      // Add new ticket if it doesn't exist
-      return removeDuplicatesAndSort([...prevTickets, updatedTicket]);
-    });
-  };
-
-  // Effect for fetching tickets and subscribing to real-time updates
+  // Fetch tickets once when the component mounts
   useEffect(() => {
-    fetchTickets(); // Fetch tickets when the component mounts
-
-    // Set up real-time updates using Sanity's listen method
-    const query = '*[_type == "ticket"]';
-    const subscription = client.listen(query).subscribe((update) => {
-      const { documentId, result, transition } = update;
-      
-      if (transition === 'appear' || transition === 'update') {
-        handleDataUpdate(result); // Handle incoming ticket updates
-      } else if (transition === 'disappear') {
-        setTickets(prevTickets => prevTickets.filter(ticket => ticket._id !== documentId)); // Remove ticket
-      }
-    });
-
-    // Cleanup function to unsubscribe when the component unmounts
-    return () => {
-      subscription.unsubscribe();
-    };
+    fetchTickets();
   }, []);
-
-  // Remove duplicate tickets and sort them by date and time
-  const removeDuplicatesAndSort = (tickets) => {
-    // Remove duplicates based on ticket ID
-    const uniqueTickets = Object.values(tickets.reduce((acc, ticket) => {
-      acc[ticket._id] = ticket;
-      return acc;
-    }, {}));
-    
-    // Sort tickets by createdAt (date and time)
-    return uniqueTickets.sort((a, b) => {
-      const dateA = new Date(a.createdAt);
-      const dateB = new Date(b.createdAt);
-      return dateA - dateB;
-    });
-  };
-
-  // Function to format date and time from createdAt
-  const formatDateAndTime = (createdAt) => {
-    const date = new Date(createdAt);
-    
-    // Format date as YYYY-MM-DD and time as HH:mm
-    const formattedDate = date.toISOString().split('T')[0];
-    const formattedTime = date.toTimeString().split(' ')[0].slice(0, 5);
-
-    return { date: formattedDate, time: formattedTime };
-  };
-
-  // Render signature status for people
-  const renderSignatureStatus = (people) => {
-    if (!Array.isArray(people)) {
-      return 'Signature status unknown'; // Fallback message if people is not an array
-    }
-    
-    const allSigned = people.every(person => person.signature);
-    return allSigned ? 'Signed' : 'Unsigned';
-  };
 
   // Handle row click to navigate to ticket details
   const handleRowClick = (ticketId) => {
     navigate(`/ticket/${ticketId}`);
   };
 
-  // Separate tickets into signed and unsigned
-  const unsignedTickets = tickets.filter(ticket => renderSignatureStatus(ticket.people) === 'Unsigned');
-  const signedTickets = tickets.filter(ticket => renderSignatureStatus(ticket.people) === 'Signed');
+  // Filter tickets based on the signed/unsigned toggle
+  const filteredTickets = showSigned
+    ? tickets.filter((ticket) => ticket.data.status === 'true')
+    : tickets.filter((ticket) => ticket.data.status !== 'true');
 
   return (
     <div>
-      <Navbar/>
-      <div style={{ maxWidth: '800px', margin: 'auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-        <h1 style={{ textAlign: 'center' }}>Tickets</h1>
+      <Navbar />
+      <div className="max-w-6xl mx-auto py-8 px-6">
+        {/* Title */}
+        <h1 className="text-5xl font-extrabold text-center text-black cursor-pointer mb-8 hover:text-gray-700 transition-all duration-300"
+          onClick={fetchTickets}
+        >
+          🎟️ Tickets Dashboard
+        </h1>
 
-        <button 
-  onClick={() => setShowSigned(prev => !prev)} 
-  style={{ 
-    marginBottom: '10px', 
-    padding: '10px 15px', 
-    backgroundColor: '#333', // Black background
-    color: '#fff', 
-    border: 'none', 
-    borderRadius: '5px', 
-    cursor: 'pointer', 
-    fontSize: '16px',
-    transition: 'background-color 0.3s ease',
-  }}
-  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#555'} // Darker black on hover
-  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#333'} // Original black on mouse leave
->
-  {showSigned ? 'Hide Signed Tickets' : 'Show Signed Tickets'}
-</button>
+        {/* Toggle Button */}
+        <div className="text-center mb-6">
+          <button
+            onClick={() => setShowSigned((prev) => !prev)}
+            className="py-3 px-6 text-lg bg-black text-white rounded-full shadow-lg hover:bg-gray-800 transition-all duration-300"
+          >
+            {showSigned ? 'Show Unsigned Tickets' : 'Show Signed Tickets'}
+          </button>
+        </div>
 
-
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-          <thead>
-            <tr style={{ backgroundColor: '#f0f0f0' }}>
-              <th style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>Customer Name</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>Date</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>Time</th>
-              <th style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>Signature Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {unsignedTickets.length > 0 ? (
-              unsignedTickets.map((ticket) => {
-                const { date, time } = formatDateAndTime(ticket.createdAt); // Format date and time from createdAt
-
-                return (
-                  <tr
-                    key={ticket._id}
-                    style={{ border: '1px solid #ccc', cursor: 'pointer' }}
-                    onClick={() => handleRowClick(ticket._id)}
-                  >
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{ticket.customerName}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{date}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{time}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>
-                      {renderSignatureStatus(ticket.people)}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
+        {/* Tickets Table */}
+        <div className="overflow-hidden rounded-lg shadow-lg bg-white">
+          <table className="min-w-full table-auto">
+            <thead className="bg-black text-white">
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', padding: '10px' }}>No unsigned tickets available.</td>
+                <th className="px-6 py-4 text-left text-lg font-semibold">Customer</th>
+                <th className="px-6 py-4 text-left text-lg font-semibold">Date</th>
+                <th className="px-6 py-4 text-left text-lg font-semibold">Time</th>
+                <th className="px-6 py-4 text-left text-lg font-semibold">Status</th>
               </tr>
-            )}
-            {showSigned && signedTickets.length > 0 ? (
-              signedTickets.map((ticket) => {
-                const { date, time } = formatDateAndTime(ticket.createdAt); // Format date and time from createdAt
-
-                return (
+            </thead>
+            <tbody>
+              {filteredTickets.length > 0 ? (
+                filteredTickets.map((ticket, index) => (
                   <tr
-                    key={ticket._id}
-                    style={{ border: '1px solid #ccc', cursor: 'pointer' }}
-                    onClick={() => handleRowClick(ticket._id)}
+                    key={index}
+                    onClick={() => handleRowClick(ticket.id)}
+                    className="hover:bg-gray-100 cursor-pointer transition-all duration-200"
                   >
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{ticket.customerName}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{date}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>{time}</td>
-                    <td style={{ border: '1px solid #ccc', padding: '10px', textAlign: 'center' }}>
-                      {renderSignatureStatus(ticket.people)}
+                    <td className="px-6 py-4 border-b text-gray-700">
+                      {ticket.data.customerName}
+                    </td>
+                    <td className="px-6 py-4 border-b text-gray-700">
+                      {ticket.data.date}
+                    </td>
+                    <td className="px-6 py-4 border-b text-gray-700">
+                      {ticket.data.time}
+                    </td>
+                    <td
+                      className={`px-6 py-4 border-b font-medium ${
+                        ticket.data.status === 'true'
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {ticket.data.status === 'true' ? 'Signed' : 'Unsigned'}
                     </td>
                   </tr>
-                );
-              })
-            ) : (
-              showSigned && (
+                ))
+              ) : (
                 <tr>
-                  <td colSpan="4" style={{ textAlign: 'center', padding: '10px' }}>No signed tickets available.</td>
+                  <td
+                    colSpan="4"
+                    className="px-6 py-4 text-center text-gray-500 text-lg"
+                  >
+                    No tickets available.
+                  </td>
                 </tr>
-              )
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-8 text-gray-500">
+          <p className="text-sm">
+            © {new Date().getFullYear()} Ticket Management System. All rights reserved.
+          </p>
+        </div>
       </div>
     </div>
   );

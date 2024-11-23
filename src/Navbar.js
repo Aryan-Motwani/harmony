@@ -17,6 +17,12 @@ export default function Navbar() {
         <li>
           <Link to="/admin" style={linkStyle}>Admin</Link>
         </li>
+        <li>
+          <Link to="/records" style={linkStyle}>Records</Link>
+        </li>
+        <li>
+          <Link to="/reports" style={linkStyle}>Reports</Link>
+        </li>
       </ul>
     </nav>
   );
